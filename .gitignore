@@ -1,0 +1,6 @@
+# Local secrets - NEVER commit
+export/
+*.local.json
+
+# Logs
+logs/
