@@ -21,6 +21,4 @@ jobs:
       - name: Run checkin
         env:
           TRAE_AUTH_JSON: ${{ secrets.TRAE_AUTH_JSON }}
-        run: |
-          cd trae-checkin
-          node checkin.cjs
+        run: node checkin.cjs
