@@ -1,0 +1,26 @@
+name: Trae Work Daily Check-in
+
+on:
+  schedule:
+    # 北京时间 08:00 每日（UTC = BJT - 8h，即 UTC 00:00）
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 也支持手动触发
+
+jobs:
+  checkin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run checkin
+        env:
+          TRAE_AUTH_JSON: ${{ secrets.TRAE_AUTH_JSON }}
+        run: |
+          cd trae-checkin
+          node checkin.cjs
