@@ -18,6 +18,19 @@ async function withRetry(fn, label, maxAttempts = 3, waitMs = 15000) {
   throw lastErr;
 }
 
+// claim 专用重试：code 9074（限流）/ 网络错都 throw，其他直接返回
+async function withRetryClaim(client, maxAttempts = 3, waitMs = 15000) {
+  return withRetry(async () => {
+    const r = await client.post("/trae/api/v2/ug/checkin_credits/claim", {});
+    const c = r.json;
+    if (!c) throw new Error(`HTTP ${r.status} 无 JSON 返回`);
+    if (c.code === 0) return r;
+    if (c.code === 9074) throw new Error(`限流 ${c.message}`);  // ← 关键：限流也 throw 才能重试
+    if (c.code === 1001) { console.log("今日已签到（race），跳过"); return r; }
+    throw new Error(`code=${c.code} ${c.message || ""}`);
+  }, "claim", maxAttempts, waitMs);
+}
+
 async function main() {
   const jsonOut = process.argv.includes("--json");
   const client = await createClient();
@@ -36,10 +49,7 @@ async function main() {
   if (jsonOut) {
     let result = { status_read: true, checked_in: !!s.checked_in };
     if (!s.checked_in) {
-      const claim = await withRetry(
-        () => client.post("/trae/api/v2/ug/checkin_credits/claim", {}),
-        "claim", 3, 15000
-      );
+      const claim = await withRetryClaim(client);
       result.claim = claim.json;
     }
     console.log(JSON.stringify(result, null, 2));
@@ -55,10 +65,7 @@ async function main() {
     return;
   }
 
-  const claim = await withRetry(
-    () => client.post("/trae/api/v2/ug/checkin_credits/claim", {}),
-    "claim", 3, 15000
-  );
+  const claim = await withRetryClaim(client);
   if (claim.json && claim.json.code === 0) {
     const c = claim.json;
     const gained = c.gained_credits ?? c.credits_gained ?? c.reward ?? c.extra_credits ?? "";
