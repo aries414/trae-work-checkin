@@ -1,7 +1,7 @@
 "use strict";
 const { createClient } = require("./lib.cjs");
 
-async function withRetry(fn, label, maxAttempts = 3, waitMs = 15000) {
+async function withRetry(fn, label, maxAttempts = 5, waitMs = 30000) {
   let lastErr;
   for (let i = 1; i <= maxAttempts; i++) {
     try {
@@ -19,7 +19,7 @@ async function withRetry(fn, label, maxAttempts = 3, waitMs = 15000) {
 }
 
 // claim 专用重试：code 9074（限流）/ 网络错都 throw，其他直接返回
-async function withRetryClaim(client, maxAttempts = 3, waitMs = 15000) {
+async function withRetryClaim(client, maxAttempts = 5, waitMs = 30000) {
   return withRetry(async () => {
     const r = await client.post("/trae/api/v2/ug/checkin_credits/claim", {});
     const c = r.json;
@@ -49,7 +49,7 @@ async function main() {
   if (jsonOut) {
     let result = { status_read: true, checked_in: !!s.checked_in };
     if (!s.checked_in) {
-      const claim = await withRetryClaim(client);
+      const claim = await withRetryClaim(client, 5, 30000);
       result.claim = claim.json;
     }
     console.log(JSON.stringify(result, null, 2));
@@ -65,7 +65,7 @@ async function main() {
     return;
   }
 
-  const claim = await withRetryClaim(client);
+  const claim = await withRetryClaim(client, 5, 30000);
   if (claim.json && claim.json.code === 0) {
     const c = claim.json;
     const gained = c.gained_credits ?? c.credits_gained ?? c.reward ?? c.extra_credits ?? "";
