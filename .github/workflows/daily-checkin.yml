@@ -2,8 +2,8 @@ name: Trae Work Daily Check-in
 
 on:
   schedule:
-    # 北京时间 05:00 每日（UTC = BJT - 8h，即 UTC 21:00 前一日）
-    - cron: '0 21 * * *'
+    # 北京时间 07:00 每日（UTC = BJT - 8h，即 UTC 23:00 前一日）
+    - cron: '0 23 * * *'
   workflow_dispatch:  # 也支持手动触发
 
 jobs:
